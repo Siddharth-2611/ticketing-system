@@ -120,11 +120,12 @@ ticket-booking-engine/
 
 ---
 
-<img width="960" height="540" alt="Screenshot 2026-06-13 205005" src="https://github.com/user-attachments/assets/b7a376cd-22f4-431d-a46e-496230dabd4f" />
+<img width="930" height="412" alt="Screenshot 2026-06-13 205028" src="https://github.com/user-attachments/assets/ebd4db51-c136-48e2-8326-efe1c188da2c" />
 
 ---
 
-<img width="824" height="410" alt="Screenshot 2026-06-13 205111" src="https://github.com/user-attachments/assets/80c91e91-2499-46bc-8c1e-93d91b6717cc" />
+<img width="824" height="410" alt="Screenshot 2026-06-13 205111" src="https://github.com/user-attachments/assets/b222632e-f3f3-439e-991b-9a60cd568cfc" />
+
 
 ---
 
