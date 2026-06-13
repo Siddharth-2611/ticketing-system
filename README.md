@@ -114,3 +114,21 @@ ticket-booking-engine/
     └── src/main/java/com/ticket/notification_service/
         ├── NotificationServiceApplication.java # Config initialization & Mail Bean setups
         └── NotificationConsumer.java      # Kafka stream listener & SMTP dispatch node
+```
+## Screenshots
+<img width="940" height="407" alt="Screenshot 2026-06-13 191043" src="https://github.com/user-attachments/assets/27786f5f-9d55-43a6-8ba0-777d5f50bfad" />
+
+---
+
+<img width="960" height="540" alt="Screenshot 2026-06-13 205005" src="https://github.com/user-attachments/assets/b7a376cd-22f4-431d-a46e-496230dabd4f" />
+
+---
+
+<img width="824" height="410" alt="Screenshot 2026-06-13 205111" src="https://github.com/user-attachments/assets/80c91e91-2499-46bc-8c1e-93d91b6717cc" />
+
+---
+
+<img width="2316" height="1080" alt="photo_2026-06-13_23-50-03" src="https://github.com/user-attachments/assets/2fb3e873-b060-464b-9368-a89455a6db08" />
+
+
+
