@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="ticket.png">
+    <title>Microservices-Based Ticketing System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        .seat { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+        .modal-animate { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="bg-slate-950 text-white font-sans min-h-screen">
+
+<header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+        <div class="h-3 w-3 rounded-full bg-cyan-500 animate-pulse"></div>
+        <h1 class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            Ticketing System
+        </h1>
+    </div>
+    <div class="flex gap-6 text-xs text-slate-400">
+        <div>Place: <span class="text-emerald-400 font-mono font-bold">The Habitat, Mumbai</span></div>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
+    <div class="lg:col-span-2 bg-slate-900/40 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+        <div class="text-center mb-8">
+            <div class="w-3/4 mx-auto bg-gradient-to-r from-cyan-500/10 via-blue-500/50 to-cyan-500/10 h-3 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.3)]"></div>
+            <span class="text-xs tracking-widest text-slate-500 uppercase mt-2 block font-semibold">STAGE DIRECTION</span>
+        </div>
+        <div class="flex flex-col gap-6 max-w-2xl mx-auto" id="auditoriumGrid"></div>
+        <div class="flex justify-center gap-8 mt-10 pt-6 border-t border-slate-800/60 text-xs text-slate-400">
+            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-slate-800 border border-slate-700"></div> Available</div>
+            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div> Selected</div>
+            <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-rose-600/30 border border-rose-500/40 text-rose-400/60"></div> Sold / Locked</div>
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-6">
+        <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+            <h2 class="text-lg font-bold mb-4 text-slate-200">Selected Reservation</h2>
+            <form id="multiTicketForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1">Select Event & Showtime</label>
+                    <select id="showDropdown" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:border-cyan-500 focus:outline-none font-medium cursor-pointer">
+                        <option value="STANDUP-04PM">Standup Comedy — 04:00 PM IST</option>
+                        <option value="STANDUP-08PM">Standup Comedy — 08:00 PM IST</option>
+                        <option value="ROCK-LIVE-06PM">Rock Concert — 06:00 PM Live Arena</option>
+                        <option value="MAGIC-SHOW-09PM">Grand Magic Spectacle — 09:00 PM Night Show</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1">Selected Seat Numbers</label>
+                    <textarea id="selectedSeatsDisplay" readonly rows="2" placeholder="Select seats" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-cyan-400 font-mono font-bold resize-none focus:outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1">Aggregate Total</label>
+                    <div class="text-3xl font-black text-emerald-400 font-mono" id="totalPriceTag">₹0</div>
+                </div>
+                <button type="submit" id="submitBtn" disabled class="w-full bg-slate-800 text-slate-400 border border-slate-700 hover:from-cyan-500 hover:to-blue-600 hover:bg-gradient-to-r hover:text-slate-950 font-bold py-3.5 rounded-xl transition duration-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-lg mt-2">
+                    Proceed to Payment
+                </button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<div id="paymentModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl modal-animate text-center">
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+            <h3 class="text-md font-bold tracking-tight text-slate-200">Secure UPI Payment Gateway</h3>
+            <button onclick="closeGatewayModal()" class="text-slate-500 hover:text-slate-300 cursor-pointer text-lg">&times;</button>
+        </div>
+        <p class="text-xs text-slate-400 mb-6">Your selected seats are temporarily locked. Provide your dispatch email and scan the code below to complete payment.</p>
+        <div class="space-y-4 text-left mb-6">
+            <div>
+                <label class="block text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1">Email Delivery Address</label>
+                <input type="email" id="deliveryEmail" required placeholder="name@domain.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:border-cyan-500 focus:outline-none font-medium">
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex justify-between items-center">
+                <span class="text-xs text-slate-400 font-semibold">Total Invoice Value:</span>
+                <span class="text-xl font-mono font-black text-emerald-400" id="modalPriceTag">₹0</span>
+            </div>
+        </div>
+        <div class="bg-white p-3 rounded-xl inline-block shadow-inner mx-auto mb-4">
+            <img id="qrCodeImage" src="" alt="UPI Transfer QR Code" class="w-48 h-48 block">
+        </div>
+        <p class="text-xs text-slate-400 mb-6 font-mono bg-slate-950 py-1.5 px-3 rounded-lg inline-block">Payee VPA: <span class="text-slate-200 font-bold">siddhart-1@okaxis</span></p>
+        <button onclick="executeFinalBookingConfirmation()" id="confirmTransferBtn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black py-3 rounded-xl shadow-lg transition duration-150 cursor-pointer tracking-wide uppercase text-xs">
+            I Have Transferred the Amount
+        </button>
+    </div>
+</div>
+
+<script>
+    const BACKEND_URL = "http://localhost:8081/api/v1/bookings";
+    const UPI_ID = "siddhart-1@okaxis";
+
+    const showDropdown = document.getElementById("showDropdown");
+    const gridContainer = document.getElementById("auditoriumGrid");
+    const seatsDisplay = document.getElementById("selectedSeatsDisplay");
+    const totalPriceTag = document.getElementById("totalPriceTag");
+    const submitBtn = document.getElementById("submitBtn");
+    const paymentModal = document.getElementById("paymentModal");
+    const modalPriceTag = document.getElementById("modalPriceTag");
+    const qrCodeImage = document.getElementById("qrCodeImage");
+    const emailInput = document.getElementById("deliveryEmail");
+
+    let selectedSeatsMap = new Map();
+    let liveRowPrices = {};
+    let activeCalculatedTotal = 0;
+
+    // Fixed Initial Base Price Matrix Blueprint
+    const rowConfigs = {
+        'A': { label: 'A (Front Premium)', base: 2000 },
+        'B': { label: 'B (Executive Row)', base: 1800 },
+        'C': { label: 'C (Standard Front)', base: 1600 },
+        'D': { label: 'D (Standard Mid)', base: 1400 },
+        'E': { label: 'E (General Back)', base: 1200 }
+    };
+
+    async function refreshSurgePrices() {
+        try {
+            const response = await fetch(`${BACKEND_URL}/prices?concertId=${showDropdown.value}`);
+            if (response.ok) {
+                liveRowPrices = await response.json();
+                updatePriceDisplaysOnUI();
+            } else {
+                useDefaultFallbackPrices();
+            }
+        } catch (err) {
+            console.warn("Backend price endpoint unreachable, showing base blueprint rates:", err);
+            useDefaultFallbackPrices();
+        }
+    }
+
+    // New Safe Fallback Execution Node
+    function useDefaultFallbackPrices() {
+        Object.keys(rowConfigs).forEach(rowLetter => {
+            liveRowPrices[rowLetter] = rowConfigs[rowLetter].base;
+        });
+        updatePriceDisplaysOnUI();
+    }
+
+    async function initializeDashboard() {
+        selectedSeatsMap.clear();
+        recalculateCheckoutState();
+
+        let bookedSeats = [];
+        try {
+            const res = await fetch(`${BACKEND_URL}/locked-seats?concertId=${showDropdown.value}`);
+            if (res.ok) bookedSeats = await res.json();
+        } catch (err) { console.error("Error loading locked records ledger:", err); }
+
+        gridContainer.innerHTML = "";
+        Object.keys(rowConfigs).forEach(rowLetter => {
+            const rowWrapper = document.createElement("div");
+            rowWrapper.className = "space-y-2";
+            rowWrapper.innerHTML = `
+                    <div class="flex justify-between items-center text-xs text-slate-500 px-1 font-semibold">
+                        <span>Row ${rowConfigs[rowLetter].label}</span>
+                        <span class="font-mono text-emerald-400" id="priceLabel-${rowLetter}">₹${rowConfigs[rowLetter].base}</span>
+                    </div>
+                    <div class="grid grid-cols-10 gap-2" id="rowGrid-${rowLetter}"></div>
+                `;
+            gridContainer.appendChild(rowWrapper);
+
+            const targetRowGrid = document.getElementById(`rowGrid-${rowLetter}`);
+            for (let num = 1; num <= 20; num++) {
+                const seatId = `${rowLetter}-${num}`;
+                const seatButton = document.createElement("button");
+                seatButton.id = `SEAT-${seatId}`;
+
+                if (bookedSeats.includes(seatId)) {
+                    seatButton.className = "seat aspect-square rounded bg-rose-600/30 border border-rose-500/40 text-rose-400/60 font-mono text-xs flex items-center justify-center cursor-not-allowed p-1 opacity-60";
+                } else {
+                    seatButton.className = "seat aspect-square rounded bg-slate-800 border border-slate-700 font-mono text-xs font-bold text-slate-400 hover:border-cyan-400 flex items-center justify-center cursor-pointer p-1";
+                    seatButton.onclick = () => handleSeatToggle(seatId, rowLetter, seatButton);
+                }
+                seatButton.innerHTML = `<span>${num}</span>`;
+                targetRowGrid.appendChild(seatButton);
+            }
+        });
+        await refreshSurgePrices();
+    }
+
+    function handleSeatToggle(seatId, rowLetter, element) {
+        if (element.classList.contains('opacity-60')) return;
+        if (selectedSeatsMap.has(seatId)) {
+            selectedSeatsMap.delete(seatId);
+            element.className = "seat aspect-square rounded bg-slate-800 border border-slate-700 font-mono text-xs font-bold text-slate-400 hover:border-cyan-400 flex items-center justify-center cursor-pointer p-1";
+        } else {
+            selectedSeatsMap.set(seatId, rowLetter);
+            element.className = "seat aspect-square rounded bg-cyan-500 text-slate-950 font-mono text-xs font-bold flex items-center justify-center cursor-pointer p-1 shadow-[0_0_15px_rgba(6,182,212,0.4)]";
+        }
+        recalculateCheckoutState();
+    }
+
+    function updatePriceDisplaysOnUI() {
+        Object.keys(liveRowPrices).forEach(rowLetter => {
+            const label = document.getElementById(`priceLabel-${rowLetter}`);
+            if (label) label.innerText = `Price: ₹${liveRowPrices[rowLetter]}`;
+        });
+        recalculateCheckoutState();
+    }
+
+    // Computes individual seat price values using live cached maps or baseline parameters
+    function recalculateCheckoutState() {
+        const seatsArray = Array.from(selectedSeatsMap.keys());
+        seatsDisplay.value = seatsArray.join(", ");
+        activeCalculatedTotal = 0;
+        selectedSeatsMap.forEach((rowLetter) => {
+            activeCalculatedTotal += liveRowPrices[rowLetter] || rowConfigs[rowLetter].base;
+        });
+        totalPriceTag.innerText = `₹${activeCalculatedTotal}`;
+        submitBtn.disabled = seatsArray.length === 0;
+    }
+
+    showDropdown.onchange = () => {
+        initializeDashboard();
+    };
+
+    document.getElementById("multiTicketForm").onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            concertId: showDropdown.value,
+            userId: "user_web_dashboard",
+            seats: Array.from(selectedSeatsMap.keys())
+        };
+        submitBtn.innerText = "Processing...";
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/lock`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            if (response.status === 200) { openGatewayModal(); }
+            else {
+                alert(`Lock Refused: ${await response.text()}`);
+                initializeDashboard();
+            }
+        } catch (err) { alert(`Backend Connection Fault: ${err.message}`); }
+        finally {
+            submitBtn.innerText = "Proceed to Payment";
+            submitBtn.disabled = selectedSeatsMap.size === 0;
+        }
+    };
+
+    function openGatewayModal() {
+        modalPriceTag.innerText = `₹${activeCalculatedTotal}`;
+        const upiLink = `upi://pay?pa=${UPI_ID}&pn=TicketEngine&am=${activeCalculatedTotal}&cu=INR&tn=Show-${showDropdown.value}-Seats-${Array.from(selectedSeatsMap.keys()).join("-")}`;
+        qrCodeImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(upiLink)}`;
+        paymentModal.classList.remove("hidden");
+    }
+
+    function closeGatewayModal() { paymentModal.classList.add("hidden"); }
+
+    async function executeFinalBookingConfirmation() {
+        if (!emailInput.checkValidity() || !emailInput.value) {
+            alert("Please input a valid email address to route your tickets.");
+            return;
+        }
+        const payload = {
+            concertId: showDropdown.value,
+            email: emailInput.value,
+            seats: Array.from(selectedSeatsMap.keys())
+        };
+        const confirmBtn = document.getElementById("confirmTransferBtn");
+        confirmBtn.innerText = "Verifying Transaction with Node...";
+        confirmBtn.disabled = true;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/confirm`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            if (response.ok) {
+                alert(`Payment Verified!\nYour confirmation tickets have been generated and dispatched to: ${emailInput.value}`);
+            }
+        } catch (err) { alert(`Network failure: ${err.message}`); }
+        finally {
+            confirmBtn.innerText = "I Have Transferred the Amount";
+            confirmBtn.disabled = false;
+            selectedSeatsMap.clear();
+            closeGatewayModal();
+            initializeDashboard();
+        }
+    }
+
+    initializeDashboard();
+</script>
+</body>
+</html>
